@@ -3,14 +3,14 @@ import os.path
 from datetime import date
 from openpyxl.reader.excel import load_workbook
 from ttkbootstrap import*
-
+import tkinter as tk
 from tkinter import messagebox
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.dialogs import Messagebox
 
-class TransportInterface(Window):
+class STCInterface(Window):
     def __init__(self):
-        super().__init__(size=(1600,1000),title="Manipulation des données de restauration",minsize=(1000,800),maxsize=(1600,800))
+        super().__init__(size=(1600,1000),title="Manipulation des données STC",minsize=(1000,800),maxsize=(1600,800))
         self.workbook = None
         self.excel_file_path = r"C:\Users\HP\Downloads\stg_SEBN\ProjetStg\données.xlsx"
         self.connectToFile()
@@ -32,13 +32,6 @@ class TransportInterface(Window):
         elif type==2:
             entry = DateEntry(frame,bootstyle=(INFO))
             entry.place(x=x + 200, y=y)
-        elif type == 4:
-            entry = Combobox(frame, values=vals,bootstyle=(INFO))
-            entry.place(x=x + 200, y=y)
-            entry.bind("<<ComboboxSelected>>", self.update_kst_values)
-        elif type == 5:
-            entry = Combobox(frame, bootstyle=(INFO))
-            entry.place(x=x + 200, y=y)
 
         else :
             entry = Entry(frame, bootstyle=(INFO))
@@ -47,43 +40,55 @@ class TransportInterface(Window):
         return  entry
 
     def ajouterMTD(self):
+        natureDepart = self.natureDepart.get()
+        motif = self.motif.get()
+        site = self.site.get()
+        affectation = self.affectation.get()
+        shift = self.shift.get()
         nomPre = self.nomPre.get()
         matricule = self.matricule.get()
         status = self.status.get()
-        cout = self.cout.get()
+        contrat = self.contrat.get()
         dept = self.dept.get()
-        kst = self.kst.get()
-        date = datetime.strptime(self.date.entry.get(), "%d/%m/%Y")
+        fonction = self.fonction.get()
+        dateEMB = datetime.strptime(self.dateEMB.entry.get(), "%d/%m/%Y")
+        dateSTC = datetime.strptime(self.dateSTC.entry.get(), "%d/%m/%Y")
 
-        selected_prestation= self.selected_prestation.get()
 
        # print("selected_prestation:",selected_prestation,"date:",month_mapping.get(date.month, "UNKNOWN"),"statut:",status,"matricule:",matricule,"nom:",nom,"prenom:",prenom,"bus:",bus,"dept:",dept,"kst:",kst,"kv:",kv,"site:",site,"station:",station)
 
-        if str(status)=="":
-            return  Messagebox.show_error(title="Error",message="le champs statut est requis",alert=True,padding=(20, 20))
+        if str(fonction)=="":
+            return  Messagebox.show_error(title="Error",message="le champs Fonction est requis",alert=True,padding=(20, 20))
+        if str(natureDepart)=="":
+            return  Messagebox.show_error(title="Error",message="le champs nature de départ est requis",alert=True,padding=(20, 20))
+        if str(motif)=="":
+            return  Messagebox.show_error(title="Error",message="le champs motif est requis",alert=True,padding=(20, 20))
         if str(dept)=="":
             return  Messagebox.show_error(title="Error",message="le champs département est requis",alert=True,padding=(20, 20))
-        if len(cout) == 0 or not cout.isdigit():
-            self.cout.delete(0, 'end')
-            return Messagebox.show_error(title="Error", message="le champs Cout doit être un entier ", alert=True,
-                                  padding=(20, 20))
-        sheet = self.workbook['Restauration']
+
+        sheet = self.workbook['STC']
 
         if self.selectedIndex != -1:
 
             row_to_update = sheet[self.selectedIndex+1]
             row_to_update[1].value = matricule
             row_to_update[2].value = nomPre
-            row_to_update[3].value = date.date()
-            row_to_update[4].value = status
-            row_to_update[5].value = dept
-            row_to_update[6].value = kst
-            row_to_update[7].value = cout
-            row_to_update[8].value = selected_prestation
+            row_to_update[3].value = dateEMB.date()
+            row_to_update[4].value = dateSTC.date()
+            row_to_update[5].value = natureDepart
+            row_to_update[6].value = motif
+            row_to_update[7].value = status
+            row_to_update[8].value = fonction
+            row_to_update[9].value = dept
+            row_to_update[10].value = site
+            row_to_update[11].value = affectation
+            row_to_update[12].value = contrat
+            row_to_update[13].value = shift
 
         else:
 
-            new_row = [(sheet.max_row),matricule, nomPre, date.date(), status, dept, kst, cout, selected_prestation]
+            new_row = [(sheet.max_row),matricule, nomPre, dateEMB.date(),dateSTC.date(),natureDepart,motif, status,
+                       fonction,dept, site, affectation, contrat,shift]
             # Append the new row to the worksheet
             sheet.append(new_row)
 
@@ -97,17 +102,6 @@ class TransportInterface(Window):
         self.vider_table()
         self.selectedIndex = -1
 
-    def update_kst_values(self, event):
-        department = self.dept.get()
-        if department == "PPE":
-            kst_values = ["123", "124", "125"]
-        elif department == "PCP":
-            kst_values = ["201", "202", "203"]
-        else:
-            kst_values = []
-
-        self.kst['values'] = kst_values
-
     def widgets(self):
         frame = Frame(self)
         frame.pack(side = TOP, fill=BOTH,expand=True)
@@ -120,44 +114,33 @@ class TransportInterface(Window):
 
         #formulaire
 
-        self.matricule = self.entry_label(lblFrame1, 5, 0, "Matricule",-1,[])
-        self.nomPre = self.entry_label(lblFrame1, 5, 70, "Nom & Prénom",-1,[])
-        self.cout = self.entry_label(lblFrame1, 5, 140, "Coût",-1,[])
+        self.matricule = self.entry_label(lblFrame1, 5, 0, "Matricule", -1, [])
+        self.nomPre = self.entry_label(lblFrame1, 5, 50, "Nom & Prenom", -1, [])
+        self.contrat = self.entry_label(lblFrame1, 5, 100, "Contrat", 3, ["CDI","CD1","CD2","ANA","INT"])
 
-        self.dept = self.entry_label(lblFrame1, 5, 210, "Département", 4, ["PPE","PCP"])
+        self.dept = self.entry_label(lblFrame1, 5, 150, "Département", 3, ["PPE", "PCP"])
 
-        self.kst = self.entry_label(lblFrame1, 5, 280, "KST", 5, [])
-        self.status = self.entry_label(lblFrame1, 5, 350, "Statut",-1,[])
+        self.fonction = self.entry_label(lblFrame1, 5, 200, "Fonction", -1, [])
+        self.status = self.entry_label(lblFrame1, 5, 250, "Statut", 3, ["ADM","IND"])
+        self.affectation = self.entry_label(lblFrame1, 5, 300, "Affectation", -1, [])
+        self.shift = self.entry_label(lblFrame1, 5, 350, "Shift", 3, ["A","B","C","ABC","ADM"])
+        self.dateEMB = self.entry_label(lblFrame1, 5, 400, "Date d'embauche", 2, [])
+        self.dateSTC = self.entry_label(lblFrame1, 5, 450, "Date STC", 2, [])
+        self.site = self.entry_label(lblFrame1, 5, 500, "Site", 3, ["SEBN-MA1","SEBN-MA2","SETELLITE-1","S-booknadel"])
+        self.natureDepart = self.entry_label(lblFrame1, 5, 550, "Nature de départ", -1, [])
+        self.motif = self.entry_label(lblFrame1, 5, 600, "Motif de départ", -1, [])
 
-        self.date = self.entry_label(lblFrame1, 5, 420, "Date", 2,[])
-
-        label = Label(frame, text="Prestation", bootstyle=(INFO))
-        label.place(x=10, y=550)
-
-        self.selected_prestation = tk.StringVar()
-        self.prestation1 = Radiobutton(bootstyle="INFO", text="Sub",variable=self.selected_prestation,value="Subvention")
-        self.prestation2 = Radiobutton(bootstyle="INFO", text="HS",variable=self.selected_prestation,value="Heures Supplémentaires")
-        self.prestation3 = Radiobutton(bootstyle="INFO", text="Stg",variable=self.selected_prestation,value="Stagiaire")
-        self.prestation4 = Radiobutton(bootstyle="INFO", text="PC",variable=self.selected_prestation,value="Pauses Café")
-
-        self.prestation1.place(x=200, y=550)
-        self.prestation2.place(x=280, y=550)
-        self.prestation3.place(x=360, y=550)
-        self.prestation4.place(x=440, y=550)
-
-
-        self.btnSave = Button(lblFrame1, text="Ajouter", command=self.ajouterMTD, bootstyle="INFO")
-        self.btnSave.place(x=250,y=600,width= 215 )
+        self.btnSave = Button(lblFrame1, text="Valider", command=self.ajouterMTD, bootstyle="INFO")
+        self.btnSave.place(x=250,y=650,width= 215 )
 
         self.btnUpdate = Button(lblFrame1, text="Modifier", command=self.updateValue, bootstyle="success")
         self.btnUpdate.configure(state="disable")
-        self.btnUpdate.place(x=5, y=600, width=215)
+        self.btnUpdate.place(x=5, y=650, width=215)
 
         self.btnDrop = Button(lblFrame1, text="Supprimer", command=self.confirm_delete_row, bootstyle="DANGER")
         self.btnDrop.configure(state="disable")
-        self.btnDrop.place(x=140, y=680, width=215)
-        #btnSave = Button(lblFrame1, text="Valider", command="/")
-        #btnSave.place(x=5, y=500, width=200)
+        self.btnDrop.place(x=140, y=700, width=215)
+
 
         frame2 = Frame(frame, bootstyle=DANGER)
         frame2.place(x=500, y=0, width=1095, height=790)
@@ -167,7 +150,7 @@ class TransportInterface(Window):
         self.update_tableview()
 
     def update_tableview(self):
-        sheet = self.workbook['Restauration']
+        sheet = self.workbook['STC']
 
         header_row = [cell.value for cell in sheet[1]]
 
@@ -211,14 +194,23 @@ class TransportInterface(Window):
 
             self.dept.insert(0, data[5])
             self.matricule.insert(0, data[1])
-            self.status.insert(0, data[4])
-            self.nomPre.insert(0,data[2])
-            self.cout.insert(0, data[7])
-            self.kst.insert(0, data[6])
-            parsed_date = datetime.strptime(data[3], "%Y-%m-%d %H:%M:%S")
-            formatted_date = parsed_date.strftime("%d/%m/%Y")
-            self.date.entry.insert(0,formatted_date)
-            self.selected_prestation.set(data[8])
+            self.nomPre.insert(0, data[2])
+            parsed_date1 = datetime.strptime(data[3], "%Y-%m-%d %H:%M:%S")
+            parsed_date2 = datetime.strptime(data[4], "%Y-%m-%d %H:%M:%S")
+
+            self.dateEMB.entry.insert(0, parsed_date1.strftime("%d/%m/%Y"))
+            self.dateSTC.entry.insert(0, parsed_date2.strftime("%d/%m/%Y"))
+
+            self.natureDepart.insert(0, data[5])
+            self.motif.insert(0, data[6])
+            self.status.insert(0, data[7])
+            self.fonction.insert(0, data[8])
+            self.dept.insert(0, data[9])
+            self.site.insert(0, data[10])
+            self.affectation.insert(0, data[11])
+            self.contrat.insert(0, data[12])
+            self.shift.insert(0, data[13])
+
 
 
     def handle_row_click(self, event):
@@ -241,7 +233,7 @@ class TransportInterface(Window):
         data = self.tableView.view.item(selected_item_id)["values"]
         self.selectedIndex = data[0]+1
         print(self.selectedIndex)
-        sheet = self.workbook['Restauration']
+        sheet = self.workbook['STC']
 
         if self.selectedIndex != -1:
             sheet.delete_rows(self.selectedIndex)
@@ -253,9 +245,15 @@ class TransportInterface(Window):
     def vider_table(self):
         self.matricule.delete(0, 'end')
         self.status.delete(0, 'end')
-        self.cout.delete(0, 'end')
-        self.kst.delete(0, 'end')
-        self.date.entry.delete(0, 'end')
+        self.natureDepart.delete(0, 'end')
+        self.motif.delete(0, 'end')
+        self.fonction.delete(0, 'end')
         self.nomPre.delete(0, 'end')
         self.dept.delete(0, 'end')
-        self.selected_prestation.set("")
+        self.site.delete(0, 'end')
+        self.affectation.delete(0, 'end')
+        self.contrat.delete(0, 'end')
+        self.shift.delete(0, 'end')
+        self.dateSTC.entry.delete(0, 'end')
+        self.dateEMB.entry.delete(0, 'end')
+
